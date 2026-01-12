@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="main">  
+        <div class="header">
+            <div class="tabs-container">
+                <div class="tab active">Horario 1 <span class="close-tab">&times;</span></div>
+                <div class="add-tab-btn">+</div>
+            </div>
+            <div class="fullscreen-toggle" id="fullscreen-btn">
+                <svg class="icon-expand" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960"
+                    width="20px" fill="#000000">
+                    <path d="M120-120v-240h80v104l124-124 56 56-124 124h104v80H120Zm480 0v-80h104L580-324l56-56 124 124v-104h80v240H600ZM324-580 200-704v104h-80v-240h240v80H256l124 124-56 56Zm312 0-56-56 124-124H600v-80h240v240h-80v-104L636-580Z" />
+                </svg>
+                <svg class="icon-collapse" style="display: none;" xmlns="http://www.w3.org/2000/svg" height="20px"
+                    viewBox="0 -960 960 960" width="20px" fill="#000000">
+                    <path d="m156-100-56-56 124-124H120v-80h240v240h-80v-104L156-100Zm648 0L680-224v104h-80v-240h240v80H736l124 124-56 56ZM120-600v-80h104L100-804l56-56 124 124v-104h80v240H120Zm480 0v-240h80v104l124-124 56 56-124 124h104v80H600Z" />
+                </svg>
+            </div>
+        </div>
+        <div class="content">
+            <div class="schedule-grid"></div>
+        </div>
+        <div class="bottom-bar">
+            <div class="bottom-container">
+                <div class="cards">
+                    <!-- Las cards se generarán dinámicamente con JS -->
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="search-overlay" class="search-overlay">
+        <div class="search-modal">
+            <div class="close-modal-btn">&times;</div>
+            <div class="tags">
+                <div class="obligatoios">
+                    <div class="tag">
+                        <div class="quest">Nivel de estudios</div>
+                        <div class="op">Pregrado</div>
+                        <div class="desplegar"><svg xmlns="http://www.w3.org/2000/svg" height="24px"
+                                viewBox="0 -960 960 960" width="24px" fill="#000000">
+                                <path d="M480-360 280-560h400L480-360Z" />
+                            </svg></div>
+                    </div>
+                    <div class="tag">
+                        <div class="quest">Sede</div>
+                        <div class="op">1102 Medellin</div>
+                        <div class="desplegar"><svg xmlns="http://www.w3.org/2000/svg" height="24px"
+                                viewBox="0 -960 960 960" width="24px" fill="#000000">
+                                <path d="M480-360 280-560h400L480-360Z" />
+                            </svg></div>
+                    </div>
+                    <div class="tag">
+                        <div class="quest">Facultad</div>
+                        <div class="op">3068 Facultad de minas</div>
+                        <div class="desplegar"><svg xmlns="http://www.w3.org/2000/svg" height="24px"
+                                viewBox="0 -960 960 960" width="24px" fill="#000000">
+                                <path d="M480-360 280-560h400L480-360Z" />
+                            </svg></div>
+                    </div>
+                    <div class="tag">
+                        <div class="quest">Programa</div>
+                        <div class="op">3534 Ingenieria de sistemas e informatica</div>
+                        <div class="desplegar"><svg xmlns="http://www.w3.org/2000/svg" height="24px"
+                                viewBox="0 -960 960 960" width="24px" fill="#000000">
+                                <path d="M480-360 280-560h400L480-360Z" />
+                            </svg></div>
+                    </div>
+                    <div class="tag">
+                        <div class="quest">Tipología de la asignatura</div>
+                        <div class="op">Disciplinar obligatoria</div>
+                        <div class="desplegar"><svg xmlns="http://www.w3.org/2000/svg" height="24px"
+                                viewBox="0 -960 960 960" width="24px" fill="#000000">
+                                <path d="M480-360 280-560h400L480-360Z" />
+                            </svg></div>
+                    </div>
+                </div>
+                <div class="opcionales">
+                    <div class="tag">
+                        <div class="quest">Numero de creditos</div>
+                        <div class="op">Insertar numero</div>
+                    </div>
+                    <div class="tag">
+                        <div class="quest">Dias</div>
+                        <div class="op">Seleccionar dias de lunes a domingo</div>
+                    </div>
+                </div>
+                <div class="tag add-tag">+</div>
+            </div>
+            <input type="text" class="modal-search-bar" placeholder="Busque por materia o Código...">
+            <div class="modal-content-box">
+                <div class="op-row">
+                    <div class="op-row-par">Código</div>
+                    <div class="op-row-par">Asignatura</div>
+                    <div class="op-row-par">Créditos</div>
+                    <div class="op-row-par">Tipología</div>
+                    <div class="op-row-par">Prerrequisito</div>
+                </div>
+            </div>
+        </div>
+        <div class="right-bar-menu">
+            <div class="menu-title">Menú</div>
+            <div class="staged-list"></div>
+            <button class="accept-modal-btn">Aceptar</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
