@@ -1264,13 +1264,21 @@ function renderCards() {
         navButtons.className = 'card-nav-buttons';
 
         navButtons.innerHTML = `
-        <div class="nav-btn" id="scroll-left">
-            <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="#fff"><path d="m313-440 224 224-57 56-320-320 320-320 57 56-224 224h487v80H313Z"/></svg>
+        <div class="nav-row">
+            <div class="nav-btn" id="scroll-left">
+                <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="#fff"><path d="m313-440 224 224-57 56-320-320 320-320 57 56-224 224h487v80H313Z"/></svg>
+            </div>
+            <div class="nav-btn" id="scroll-right">
+                <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="#fff"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg>
+            </div>
         </div>
-        <div class="nav-btn" id="scroll-right">
-            <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="#fff"><path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/></svg>
+        <div class="toggle-filter-btn" id="toggle-filter-btn" title="Alternar vista">
+            <!-- Icon State 1: Filter List -->
+            <svg class="icon-state-1" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#FFFFFF"><path d="m640-480 80 80v80H520v240l-40 40-40-40v-240H240v-80l80-80v-280h-40v-80h400v80h-40v280Zm-286 80h252l-46-46v-314H400v314l-46 46Zm126 0Z"/></svg>
+            <!-- Icon State 2: Filter List Off (Hidden by default) -->
+            <svg class="icon-state-2" style="display: none;" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#FFFFFF"><path d="M680-840v80h-40v327l-80-80v-247H400v87l-87-87-33-33v-47h400ZM480-40l-40-40v-240H240v-80l80-80v-46L56-792l56-56 736 736-58 56-264-264h-6v240l-40 40ZM354-400h92l-44-44-2-2-46 46Zm126-193Zm-78 149Z"/></svg>
         </div>
-        <div class="nav-btn" id="add-course-btn-small" title="Añadir materia">
+        <div id="add-course-btn-small" title="Añadir materia">
             <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="#fff"><path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/></svg>
         </div>
     `;
@@ -1281,6 +1289,15 @@ function renderCards() {
 
         const addBtn = navButtons.querySelector('#add-course-btn-small');
         addBtn.onclick = () => openSearchModal(addBtn);
+
+        const toggleBtn = navButtons.querySelector('#toggle-filter-btn');
+        toggleBtn.onclick = () => {
+            const icon1 = toggleBtn.querySelector('.icon-state-1');
+            const icon2 = toggleBtn.querySelector('.icon-state-2');
+            const isState1 = icon1.style.display !== 'none';
+            icon1.style.display = isState1 ? 'none' : 'block';
+            icon2.style.display = isState1 ? 'block' : 'none';
+        };
 
         cardsContainer.appendChild(navButtons);
     }
