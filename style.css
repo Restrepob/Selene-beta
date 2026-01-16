@@ -65,13 +65,17 @@ body {
   margin-right: 40px;
   pointer-events: auto;
   margin-top: 6px;
-  overflow-x: auto; /* Permitir scroll si no caben */
-  scrollbar-width: none; /* Ocultar barra de scroll en Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
+  overflow-x: auto;
+  /* Permitir scroll si no caben */
+  scrollbar-width: none;
+  /* Ocultar barra de scroll en Firefox */
+  -ms-overflow-style: none;
+  /* IE/Edge */
 }
 
 .tabs-container::-webkit-scrollbar {
-  display: none; /* Ocultar barra de scroll en Chrome/Safari */
+  display: none;
+  /* Ocultar barra de scroll en Chrome/Safari */
 }
 
 .tab {
@@ -88,16 +92,20 @@ body {
   gap: 8px;
   transition: background-color 0.2s;
   border: none;
-  flex-shrink: 1; /* Permitir que la tab se encoja */
-  min-width: 0; /* Necesario para que flexbox la encoja más allá de su contenido */
-  max-width: 200px; /* Ancho máximo para que se vean uniformes */
+  flex-shrink: 1;
+  /* Permitir que la tab se encoja */
+  min-width: 0;
+  /* Necesario para que flexbox la encoja más allá de su contenido */
+  max-width: 200px;
+  /* Ancho máximo para que se vean uniformes */
 }
 
 .tab-name {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex: 1; /* Ocupar el espacio disponible */
+  flex: 1;
+  /* Ocupar el espacio disponible */
 }
 
 .tab:hover {
@@ -107,7 +115,7 @@ body {
 .tab.active {
   background-color: rgba(255, 255, 255, 0.2);
   font-weight: 600;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
 .close-tab {
@@ -120,7 +128,8 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  flex-shrink: 0; /* Que el botón de cerrar no se aplaste */
+  flex-shrink: 0;
+  /* Que el botón de cerrar no se aplaste */
 }
 
 .close-tab:hover {
@@ -141,7 +150,8 @@ body {
   font-size: 1rem;
   color: #fff;
   transition: background-color 0.2s;
-  flex-shrink: 0; /* Que el botón + no se aplaste */
+  flex-shrink: 0;
+  /* Que el botón + no se aplaste */
 }
 
 .add-tab-btn:hover {
@@ -1056,7 +1066,7 @@ body {
   padding: 15px 5px;
   gap: 15px;
   z-index: 100;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .settings-panel.active {
@@ -1108,11 +1118,11 @@ body {
   border-radius: 50%;
 }
 
-input:checked + .slider {
+input:checked+.slider {
   background-color: #34c759;
 }
 
-input:checked + .slider:before {
+input:checked+.slider:before {
   transform: translateX(10px);
 }
 
@@ -1244,7 +1254,7 @@ input:checked + .slider:before {
   font-weight: bold;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   transition: transform 0.1s, background-color 0.2s;
-  margin-top:-5px;
+  margin-top: -5px;
   width: 100%;
 }
 
@@ -1354,7 +1364,7 @@ input:checked + .slider:before {
   transform: scale(1.03);
   background-color: rgba(255, 255, 255, 0.6);
   border-color: #666;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .add-card-small {

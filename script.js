@@ -537,7 +537,7 @@ function updatePlanTag(val) {
         currentEditingTag.insertAdjacentElement('afterend', newTag);
     } else if (normalizedVal === 'por facultad y plan') {
         // Insertar en orden inverso para que queden: Sede, Facultad, Plan
-        
+
         // 3. ¿Por qué plan?
         const t3 = document.createElement('div');
         t3.className = 'tag';
@@ -725,7 +725,7 @@ fetch('materias.json')
                         offering.groups.forEach((g) => {
                             const code = String(g.groupNumber !== undefined ? g.groupNumber : g.groupCode);
                             groups.push({
-                                id: `${offering.offeringId}-${code}-${groups.length}`,
+                                id: g.groupId || `${offering.offeringId}-${code}`,  // Use original groupId for consistency
                                 groupCode: code,
                                 professor: g.professor || 'Por asignar',
                                 schedule: g.schedule || [],
@@ -764,7 +764,8 @@ fetch('materias.json')
 
         // Sincronizar selectedCourses con los datos más recientes de allCourses
         selectedCourses = selectedCourses.map(selected => {
-            const freshData = allCourses.find(c => c.code === selected.code);
+            // Find by code AND program to avoid issues with duplicate course names/codes across different programs
+            const freshData = allCourses.find(c => c.code === selected.code && (!selected.program || c.program === selected.program));
             if (freshData) {
                 // Crear copia de los datos frescos
                 const updatedCourse = JSON.parse(JSON.stringify(freshData));
@@ -777,7 +778,12 @@ fetch('materias.json')
                 // Sincronizar grupos preservando datos generados (score, enrolled)
                 if (updatedCourse.groups) {
                     updatedCourse.groups.forEach(freshGroup => {
-                        const oldGroup = selected.groups ? selected.groups.find(g => String(g.id) === String(freshGroup.id)) : null;
+                        // Try to find by ID first, then by groupCode as fallback
+                        let oldGroup = selected.groups ? selected.groups.find(g => String(g.id) === String(freshGroup.id)) : null;
+                        if (!oldGroup && selected.groups) {
+                            oldGroup = selected.groups.find(g => String(g.groupCode) === String(freshGroup.groupCode));
+                        }
+
                         if (oldGroup) {
                             freshGroup.score = oldGroup.score;
                         } else {
@@ -786,6 +792,18 @@ fetch('materias.json')
                         }
                         freshGroup.enrolled = 0;
                     });
+
+                    // Update selectedGroup to use the new ID format if needed
+                    if (updatedCourse.selectedGroup && updatedCourse.groups) {
+                        const selectedGroupExists = updatedCourse.groups.find(g => String(g.id) === String(updatedCourse.selectedGroup));
+                        if (!selectedGroupExists) {
+                            // Try to find by groupCode
+                            const matchByCode = updatedCourse.groups.find(g => String(g.groupCode) === String(updatedCourse.selectedGroup));
+                            if (matchByCode) {
+                                updatedCourse.selectedGroup = matchByCode.id;
+                            }
+                        }
+                    }
                 }
 
                 return updatedCourse;
@@ -1053,42 +1071,42 @@ function renderCards() {
         cardsContainer.appendChild(emptyState);
     } else {
         selectedCourses.forEach((course) => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.dataset.code = course.code;
-        if (!course.active) card.style.opacity = '0.6';
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.dataset.code = course.code;
+            if (!course.active) card.style.opacity = '0.6';
 
-        // Configuración de Drag and Drop
-        card.draggable = true;
+            // Configuración de Drag and Drop
+            card.draggable = true;
 
-        // Solo permitir arrastrar desde el título
-        card.addEventListener('mousedown', (e) => {
-            if (e.target.closest('.nombre-materia')) {
-                card.draggable = true;
-            } else {
-                card.draggable = false;
-            }
-        });
+            // Solo permitir arrastrar desde el título
+            card.addEventListener('mousedown', (e) => {
+                if (e.target.closest('.nombre-materia')) {
+                    card.draggable = true;
+                } else {
+                    card.draggable = false;
+                }
+            });
 
-        card.addEventListener('dragstart', () => card.classList.add('dragging'));
-        card.addEventListener('dragend', () => {
-            card.classList.remove('dragging');
-            updateCourseOrder();
-        });
+            card.addEventListener('dragstart', () => card.classList.add('dragging'));
+            card.addEventListener('dragend', () => {
+                card.classList.remove('dragging');
+                updateCourseOrder();
+            });
 
-        // Auto-scroll al hacer clic si la card no es completamente visible
-        card.addEventListener('click', () => {
-            let targetCard = card;
+            // Auto-scroll al hacer clic si la card no es completamente visible
+            card.addEventListener('click', () => {
+                let targetCard = card;
 
-            // Si la card fue re-renderizada (ej: al seleccionar grupo), buscar la nueva instancia
-            if (!card.isConnected) {
-                targetCard = cardsContainer.querySelector(`.card[data-code="${course.code}"]`);
-            }
-            scrollToCardIfHidden(targetCard);
-        });
+                // Si la card fue re-renderizada (ej: al seleccionar grupo), buscar la nueva instancia
+                if (!card.isConnected) {
+                    targetCard = cardsContainer.querySelector(`.card[data-code="${course.code}"]`);
+                }
+                scrollToCardIfHidden(targetCard);
+            });
 
-        // Header de la card
-        const headerHtml = `
+            // Header de la card
+            const headerHtml = `
             <div class="color-indicator" style="background-color: ${course.color.bg};"></div>
             <div class="nombre-materia" title="${course.name}">${course.name}</div>
             <div class="info-materia">
@@ -1100,64 +1118,64 @@ function renderCards() {
             </div>
         `;
 
-        // Botón On/Off
-        const onOffBtn = document.createElement('div');
-        onOffBtn.className = 'op-on-off';
-        onOffBtn.style.backgroundColor = course.active ? '#34C759' : '#8e8e93';
-        onOffBtn.onclick = () => {
-            course.active = !course.active;
-            if (!course.active) {
-                course.selectedGroup = null;
-            }
-            saveSelectedCourses();
-            renderCards();
-        };
-
-        // Botón Eliminar
-        const removeBtn = document.createElement('div');
-        removeBtn.className = 'remove-course-btn';
-        removeBtn.innerHTML = '×';
-        removeBtn.title = 'Eliminar materia';
-        removeBtn.onclick = () => {
-            selectedCourses = selectedCourses.filter(c => c.code !== course.code);
-            saveSelectedCourses();
-            renderCards();
-        };
-
-        // Contenedor de grupos
-        const groupsContainer = document.createElement('div');
-        groupsContainer.className = 'grupos-materia';
-
-        if (course.groups) {
-            course.groups.forEach(group => {
-                const isPAET = group.admission && group.admission.type === 'PAET';
-                const isPEAMA = group.admission && group.admission.type === 'PEAMA';
-                const isREG = !isPAET && !isPEAMA;
-
-                const remaining = group.capacity - group.enrolled;
-                const tagsHtml = getGroupTags(group);
-                const isSelected = course.selectedGroup === group.id;
-                const isConflict = !isSelected && checkConflict(group, course.code);
-
-                // Obtener grupos bloqueadores
-                const blockingGroups = isConflict ? getBlockingGroups(group, course.code) : [];
-                const firstBlocker = blockingGroups.length > 0 ? blockingGroups[0] : null;
-
-                const groupDiv = document.createElement('div');
-                groupDiv.className = 'grupo';
-                groupDiv.dataset.groupId = group.id;
-                if (isSelected) {
-                    groupDiv.style.border = '2px solid #34c759';
-                    groupDiv.style.backgroundColor = '#e8f5e9';
-                } else if (isConflict) {
-                    groupDiv.classList.add('conflict');
+            // Botón On/Off
+            const onOffBtn = document.createElement('div');
+            onOffBtn.className = 'op-on-off';
+            onOffBtn.style.backgroundColor = course.active ? '#34C759' : '#8e8e93';
+            onOffBtn.onclick = () => {
+                course.active = !course.active;
+                if (!course.active) {
+                    course.selectedGroup = null;
                 }
+                saveSelectedCourses();
+                renderCards();
+            };
 
-                // HTML del grupo bloqueador (si existe)
-                let blockingInfo = '';
-                if (isConflict && firstBlocker) {
-                    const blockerTags = getGroupTags(firstBlocker.group);
-                    blockingInfo = `
+            // Botón Eliminar
+            const removeBtn = document.createElement('div');
+            removeBtn.className = 'remove-course-btn';
+            removeBtn.innerHTML = '×';
+            removeBtn.title = 'Eliminar materia';
+            removeBtn.onclick = () => {
+                selectedCourses = selectedCourses.filter(c => c.code !== course.code);
+                saveSelectedCourses();
+                renderCards();
+            };
+
+            // Contenedor de grupos
+            const groupsContainer = document.createElement('div');
+            groupsContainer.className = 'grupos-materia';
+
+            if (course.groups) {
+                course.groups.forEach(group => {
+                    const isPAET = group.admission && group.admission.type === 'PAET';
+                    const isPEAMA = group.admission && group.admission.type === 'PEAMA';
+                    const isREG = !isPAET && !isPEAMA;
+
+                    const remaining = group.capacity - group.enrolled;
+                    const tagsHtml = getGroupTags(group);
+                    const isSelected = course.selectedGroup === group.id;
+                    const isConflict = !isSelected && checkConflict(group, course.code);
+
+                    // Obtener grupos bloqueadores
+                    const blockingGroups = isConflict ? getBlockingGroups(group, course.code) : [];
+                    const firstBlocker = blockingGroups.length > 0 ? blockingGroups[0] : null;
+
+                    const groupDiv = document.createElement('div');
+                    groupDiv.className = 'grupo';
+                    groupDiv.dataset.groupId = group.id;
+                    if (isSelected) {
+                        groupDiv.style.border = '2px solid #34c759';
+                        groupDiv.style.backgroundColor = '#e8f5e9';
+                    } else if (isConflict) {
+                        groupDiv.classList.add('conflict');
+                    }
+
+                    // HTML del grupo bloqueador (si existe)
+                    let blockingInfo = '';
+                    if (isConflict && firstBlocker) {
+                        const blockerTags = getGroupTags(firstBlocker.group);
+                        blockingInfo = `
                         <div class="blocking-info" style="
                             background: rgba(196, 100, 100, 0.29);
                             border-top: 1px solid rgba(196, 100, 100, 0.1);
@@ -1175,9 +1193,9 @@ function renderCards() {
                             </div>
                         </div>
                     `;
-                }
+                    }
 
-                groupDiv.innerHTML = `
+                    groupDiv.innerHTML = `
                     <div class="grupo-header">
                         <div class="nombre-grupo">G${group.groupCode}</div>
                         ${tagsHtml}
@@ -1191,61 +1209,61 @@ function renderCards() {
                     ${blockingInfo}
                 `;
 
-                groupDiv.onclick = () => {
-                    if (isConflict) return;
-                    if (course.selectedGroup === group.id) {
-                        course.selectedGroup = null;
-                    } else {
-                        course.selectedGroup = group.id;
-                    }
-                    saveSelectedCourses();
-                    renderCards();
+                    groupDiv.onclick = () => {
+                        if (isConflict) return;
+                        if (course.selectedGroup === group.id) {
+                            course.selectedGroup = null;
+                        } else {
+                            course.selectedGroup = group.id;
+                        }
+                        saveSelectedCourses();
+                        renderCards();
 
-                    // Asegurar que la card sea visible después del re-render
-                    setTimeout(() => {
-                        const newCard = document.querySelector(`.card[data-code="${course.code}"]`);
-                        scrollToCardIfHidden(newCard);
-                    }, 50);
-                };
+                        // Asegurar que la card sea visible después del re-render
+                        setTimeout(() => {
+                            const newCard = document.querySelector(`.card[data-code="${course.code}"]`);
+                            scrollToCardIfHidden(newCard);
+                        }, 50);
+                    };
 
-                groupDiv.onmouseenter = () => renderSchedule({ course, group, isConflict });
-                groupDiv.onmouseleave = () => renderSchedule();
+                    groupDiv.onmouseenter = () => renderSchedule({ course, group, isConflict });
+                    groupDiv.onmouseleave = () => renderSchedule();
 
-                groupDiv.oncontextmenu = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    activeGroupContext = { course, group };
-                    groupContextMenu.style.left = `${e.pageX}px`;
-                    groupContextMenu.style.top = `${e.pageY}px`;
-                    groupContextMenu.style.display = 'block';
-                    
-                    // Close other menus
-                    if (typeof tabContextMenu !== 'undefined') tabContextMenu.style.display = 'none';
-                };
+                    groupDiv.oncontextmenu = (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        activeGroupContext = { course, group };
+                        groupContextMenu.style.left = `${e.pageX}px`;
+                        groupContextMenu.style.top = `${e.pageY}px`;
+                        groupContextMenu.style.display = 'block';
 
-                groupsContainer.appendChild(groupDiv);
-            });
-        }
+                        // Close other menus
+                        if (typeof tabContextMenu !== 'undefined') tabContextMenu.style.display = 'none';
+                    };
 
-        card.innerHTML = headerHtml;
-        card.appendChild(onOffBtn);
-        card.appendChild(removeBtn);
-        card.appendChild(groupsContainer);
-        cardsContainer.appendChild(card);
+                    groupsContainer.appendChild(groupDiv);
+                });
+            }
 
-        // Restaurar posición del scroll
-        if (scrollPositions[course.code]) {
-            groupsContainer.scrollTop = scrollPositions[course.code];
-        }
+            card.innerHTML = headerHtml;
+            card.appendChild(onOffBtn);
+            card.appendChild(removeBtn);
+            card.appendChild(groupsContainer);
+            cardsContainer.appendChild(card);
+
+            // Restaurar posición del scroll
+            if (scrollPositions[course.code]) {
+                groupsContainer.scrollTop = scrollPositions[course.code];
+            }
         });
     }
 
     // Botones de navegación (Flechas) dentro del contenedor .cards
     if (selectedCourses.length > 0) {
-    const navButtons = document.createElement('div');
-    navButtons.className = 'card-nav-buttons';
+        const navButtons = document.createElement('div');
+        navButtons.className = 'card-nav-buttons';
 
-    navButtons.innerHTML = `
+        navButtons.innerHTML = `
         <div class="nav-btn" id="scroll-left">
             <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="#fff"><path d="m313-440 224 224-57 56-320-320 320-320 57 56-224 224h487v80H313Z"/></svg>
         </div>
@@ -1256,15 +1274,15 @@ function renderCards() {
             <svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 -960 960 960" width="18px" fill="#fff"><path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/></svg>
         </div>
     `;
-    // Funcionalidad de scroll
-    const scrollAmount = (260 + 15) * 3; // 4 cards * (width + gap)
-    navButtons.querySelector('#scroll-left').onclick = () => smoothScroll(cardsContainer, -scrollAmount, 600);
-    navButtons.querySelector('#scroll-right').onclick = () => smoothScroll(cardsContainer, scrollAmount, 600);
-    
-    const addBtn = navButtons.querySelector('#add-course-btn-small');
-    addBtn.onclick = () => openSearchModal(addBtn);
+        // Funcionalidad de scroll
+        const scrollAmount = (260 + 15) * 3; // 4 cards * (width + gap)
+        navButtons.querySelector('#scroll-left').onclick = () => smoothScroll(cardsContainer, -scrollAmount, 600);
+        navButtons.querySelector('#scroll-right').onclick = () => smoothScroll(cardsContainer, scrollAmount, 600);
 
-    cardsContainer.appendChild(navButtons);
+        const addBtn = navButtons.querySelector('#add-course-btn-small');
+        addBtn.onclick = () => openSearchModal(addBtn);
+
+        cardsContainer.appendChild(navButtons);
     }
 
     // Restaurar posición del scroll horizontal
@@ -1280,7 +1298,7 @@ function smoothScroll(element, amount, duration) {
     function step(currentTime) {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1);
-        
+
         // Ease-in-out
         const ease = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
 
@@ -1398,6 +1416,7 @@ function renderSchedule(previewData = null) {
             blocks.push({
                 course,
                 group,
+                scheduleItem: item,  // Store the schedule item for tag generation
                 col,
                 rowStart,
                 span,
@@ -1455,7 +1474,7 @@ function renderSchedule(previewData = null) {
             block.style.zIndex = 5 + b.overlapIndex;
         }
 
-        const tagsHtml = getGroupTags(b.group);
+        const tagsHtml = getGroupTags(b.group, b.scheduleItem);
 
         block.draggable = true;
         block.dataset.courseCode = b.course.code;
@@ -1516,7 +1535,7 @@ function renderSchedule(previewData = null) {
                 const cardRect = card.getBoundingClientRect();
                 const containerRect = cardsContainer.getBoundingClientRect();
                 const currentScrollLeft = cardsContainer.scrollLeft;
-                
+
                 const targetScrollLeft = (cardRect.left - containerRect.left + currentScrollLeft) - (cardsContainer.clientWidth / 2) + (card.offsetWidth / 2);
                 cardsContainer.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
 
@@ -1636,7 +1655,7 @@ function checkConflict(targetGroup, currentCourseCode) {
 /**
  * Genera el HTML de los tags para un grupo basado en Modalidad, Admisión y Sede.
  */
-function getGroupTags(group) {
+function getGroupTags(group, scheduleItem = null) {
     let html = '';
 
     const config = {
@@ -1657,6 +1676,9 @@ function getGroupTags(group) {
         },
         repeatersOnly: {
             'SI': { code: 'PR', bgColor: '#f45656ff', textColor: '#231d1bff', title: 'para repitentes' }
+        },
+        laboratory: {
+            code: 'L', bgColor: '#08460dff', textColor: '#86c78dff', title: 'Laboratorio'
         }
     };
 
@@ -1678,6 +1700,11 @@ function getGroupTags(group) {
     // 4. Solo Repitentes
     if (group.repeatersOnly) {
         const t = config.repeatersOnly['SI'];
+        html += `<div class="group-tag" style="background-color: ${t.bgColor}; color: ${t.textColor};" title="${t.title}">${t.code}</div>`;
+    }
+    // 5. Laboratorio - Check if THIS SPECIFIC schedule item is a laboratory
+    if (scheduleItem && scheduleItem.location && scheduleItem.location.name && scheduleItem.location.name.startsWith('LABORATORIO')) {
+        const t = config.laboratory;
         html += `<div class="group-tag" style="background-color: ${t.bgColor}; color: ${t.textColor};" title="${t.title}">${t.code}</div>`;
     }
     return html;
@@ -1826,7 +1853,7 @@ function enableTabEditing(tab, index) {
     const input = document.createElement('input');
     input.className = 'tab-name-edit';
     input.value = currentName;
-    
+
     // Estilos inline para el input
     input.style.width = '100px';
     input.style.border = 'none';
@@ -1835,12 +1862,12 @@ function enableTabEditing(tab, index) {
     input.style.fontSize = 'inherit';
     input.style.fontFamily = 'inherit';
     input.style.outline = '2px solid #007aff';
-    
+
     nameSpan.innerHTML = '';
     nameSpan.appendChild(input);
     input.focus();
     input.select();
-    
+
     const save = () => {
         const val = input.value.trim();
         if (val) {
@@ -1851,8 +1878,8 @@ function enableTabEditing(tab, index) {
     };
 
     input.addEventListener('blur', save);
-    input.addEventListener('keydown', (ev) => { 
-        if (ev.key === 'Enter') save(); 
+    input.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') save();
         if (ev.key === 'Escape') renderTabs();
     });
     input.addEventListener('click', (ev) => ev.stopPropagation());
@@ -1869,7 +1896,7 @@ function renderTabs() {
         const tab = document.createElement('div');
         tab.className = `tab ${index === activeScheduleIndex ? 'active' : ''}`;
         tab.innerHTML = `<span class="tab-name" title="${schedule.name}">${schedule.name}</span> <span class="close-tab">&times;</span>`;
-        
+
         tab.onclick = (e) => {
             if (e.target.classList.contains('close-tab')) return;
             switchTab(index);
@@ -1881,7 +1908,7 @@ function renderTabs() {
         };
 
         const nameSpan = tab.querySelector('.tab-name');
-        
+
         tab.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             activeTabContext = { tab, index };
@@ -1907,7 +1934,7 @@ function addTab() {
     const newName = `Horario ${schedules.length + 1}`;
     const newCourses = JSON.parse(JSON.stringify(selectedCourses));
     newCourses.forEach(c => c.selectedGroup = null);
-    
+
     schedules.push({ name: newName, courses: newCourses });
     switchTab(schedules.length - 1);
 }
@@ -1924,7 +1951,7 @@ function closeTab(index) {
     if (schedules.length <= 1) return;
     if (index === activeScheduleIndex) activeScheduleIndex = Math.max(0, index - 1);
     else if (index < activeScheduleIndex) activeScheduleIndex--;
-    
+
     schedules.splice(index, 1);
     selectedCourses = schedules[activeScheduleIndex].courses;
     saveSelectedCourses();
@@ -2248,225 +2275,225 @@ if (scheduleGrid) {
         }
     });
 
-// Inicializar botones de scroll (Overlay)
-const leftBtn = document.getElementById('scroll-left-btn');
-const rightBtn = document.getElementById('scroll-right-btn');
-const cardsContainer = document.querySelector('.cards');
-
-if (leftBtn && rightBtn && cardsContainer) {
-    const scrollAmount = (260 + 15) * 3;
-    leftBtn.onclick = () => smoothScroll(cardsContainer, -scrollAmount, 600);
-    rightBtn.onclick = () => smoothScroll(cardsContainer, scrollAmount, 600);
-}
-
-function scrollToCardIfHidden(card) {
-    if (!card) return;
+    // Inicializar botones de scroll (Overlay)
+    const leftBtn = document.getElementById('scroll-left-btn');
+    const rightBtn = document.getElementById('scroll-right-btn');
     const cardsContainer = document.querySelector('.cards');
-    const cardRect = card.getBoundingClientRect();
-    const containerRect = cardsContainer.getBoundingClientRect();
-    const visibleLeft = containerRect.left;
-    const visibleRight = containerRect.left + cardsContainer.clientWidth;
 
-    if (cardRect.left < visibleLeft || cardRect.right > visibleRight) {
-        const currentScrollLeft = cardsContainer.scrollLeft;
-        const targetScrollLeft = (cardRect.left - visibleLeft + currentScrollLeft) - (cardsContainer.clientWidth / 2) + (card.offsetWidth / 2);
-        cardsContainer.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
+    if (leftBtn && rightBtn && cardsContainer) {
+        const scrollAmount = (260 + 15) * 3;
+        leftBtn.onclick = () => smoothScroll(cardsContainer, -scrollAmount, 600);
+        rightBtn.onclick = () => smoothScroll(cardsContainer, scrollAmount, 600);
     }
-}
 
-/* Context Menu para Grupos */
-const groupContextMenu = document.createElement('div');
-groupContextMenu.className = 'group-context-menu';
-Object.assign(groupContextMenu.style, {
-    display: 'none',
-    position: 'absolute',
-    backgroundColor: '#fff',
-    border: '1px solid #ddd',
-    borderRadius: '6px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-    zIndex: '10000',
-    padding: '4px 0',
-    minWidth: '140px',
-    fontFamily: 'system-ui, -apple-system, sans-serif'
-});
+    function scrollToCardIfHidden(card) {
+        if (!card) return;
+        const cardsContainer = document.querySelector('.cards');
+        const cardRect = card.getBoundingClientRect();
+        const containerRect = cardsContainer.getBoundingClientRect();
+        const visibleLeft = containerRect.left;
+        const visibleRight = containerRect.left + cardsContainer.clientWidth;
 
-const detailsItem = document.createElement('div');
-detailsItem.textContent = 'Información del grupo';
-Object.assign(detailsItem.style, {
-    padding: '8px 12px',
-    fontSize: '13px',
-    color: '#333',
-    cursor: 'pointer',
-    transition: 'background 0.2s'
-});
-detailsItem.onmouseenter = () => detailsItem.style.backgroundColor = '#f5f5f5';
-detailsItem.onmouseleave = () => detailsItem.style.backgroundColor = 'transparent';
-
-groupContextMenu.appendChild(detailsItem);
-document.body.appendChild(groupContextMenu);
-
-let activeGroupContext = null;
-
-detailsItem.onclick = () => {
-    if (activeGroupContext) {
-        showGroupDetails(activeGroupContext.course, activeGroupContext.group);
+        if (cardRect.left < visibleLeft || cardRect.right > visibleRight) {
+            const currentScrollLeft = cardsContainer.scrollLeft;
+            const targetScrollLeft = (cardRect.left - visibleLeft + currentScrollLeft) - (cardsContainer.clientWidth / 2) + (card.offsetWidth / 2);
+            cardsContainer.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
+        }
     }
-    groupContextMenu.style.display = 'none';
-};
 
-document.addEventListener('click', (e) => {
-    if (!groupContextMenu.contains(e.target)) {
+    /* Context Menu para Grupos */
+    const groupContextMenu = document.createElement('div');
+    groupContextMenu.className = 'group-context-menu';
+    Object.assign(groupContextMenu.style, {
+        display: 'none',
+        position: 'absolute',
+        backgroundColor: '#fff',
+        border: '1px solid #ddd',
+        borderRadius: '6px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        zIndex: '10000',
+        padding: '4px 0',
+        minWidth: '140px',
+        fontFamily: 'system-ui, -apple-system, sans-serif'
+    });
+
+    const detailsItem = document.createElement('div');
+    detailsItem.textContent = 'Información del grupo';
+    Object.assign(detailsItem.style, {
+        padding: '8px 12px',
+        fontSize: '13px',
+        color: '#333',
+        cursor: 'pointer',
+        transition: 'background 0.2s'
+    });
+    detailsItem.onmouseenter = () => detailsItem.style.backgroundColor = '#f5f5f5';
+    detailsItem.onmouseleave = () => detailsItem.style.backgroundColor = 'transparent';
+
+    groupContextMenu.appendChild(detailsItem);
+    document.body.appendChild(groupContextMenu);
+
+    let activeGroupContext = null;
+
+    detailsItem.onclick = () => {
+        if (activeGroupContext) {
+            showGroupDetails(activeGroupContext.course, activeGroupContext.group);
+        }
         groupContextMenu.style.display = 'none';
-    }
-});
+    };
 
-function showGroupDetails(course, group) {
-    const overlay = document.createElement('div');
-    overlay.className = 'group-selection-overlay';
-    overlay.style.zIndex = '10001';
+    document.addEventListener('click', (e) => {
+        if (!groupContextMenu.contains(e.target)) {
+            groupContextMenu.style.display = 'none';
+        }
+    });
 
-    const modal = document.createElement('div');
-    modal.className = 'group-selection-modal';
-    modal.style.maxWidth = '500px';
-    modal.style.width = '90%';
-    modal.style.background = 'rgba(255, 255, 255, 0.95)';
-    modal.style.backdropFilter = 'blur(10px)';
+    function showGroupDetails(course, group) {
+        const overlay = document.createElement('div');
+        overlay.className = 'group-selection-overlay';
+        overlay.style.zIndex = '10001';
 
-    // Title
-    const title = document.createElement('div');
-    title.innerHTML = `
+        const modal = document.createElement('div');
+        modal.className = 'group-selection-modal';
+        modal.style.maxWidth = '500px';
+        modal.style.width = '90%';
+        modal.style.background = 'rgba(255, 255, 255, 0.95)';
+        modal.style.backdropFilter = 'blur(10px)';
+
+        // Title
+        const title = document.createElement('div');
+        title.innerHTML = `
         <div style="font-size: 1.1rem; font-weight: bold; margin-bottom: 5px; color: #333;">${course.name}</div>
         <div style="font-size: 0.9rem; color: #666;">Grupo ${group.groupCode} - ${course.code}</div>
         <div style="font-size: 0.8rem; color: #888; margin-top: 2px;">${course.credits} Créditos • ${course.type}</div>
     `;
-    modal.appendChild(title);
+        modal.appendChild(title);
 
-    // Content Container
-    const content = document.createElement('div');
-    Object.assign(content.style, {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-        marginTop: '15px',
-        fontSize: '0.9rem',
-        maxHeight: '60vh',
-        overflowY: 'auto',
-        paddingRight: '5px'
-    });
-
-    // Helper to add rows
-    const addRow = (label, value) => {
-        if (!value) return;
-        const row = document.createElement('div');
-        Object.assign(row.style, {
-            display: 'flex',
-            justifyContent: 'space-between',
-            borderBottom: '1px solid #eee',
-            padding: '6px 0'
-        });
-        
-        row.innerHTML = `
-            <strong style="color: #444;">${label}:</strong>
-            <span style="color: #666; text-align: right; max-width: 60%; word-break: break-word;">${value}</span>
-        `;
-        content.appendChild(row);
-    };
-
-    if (course.faculty) addRow('Facultad', course.faculty);
-    if (course.contentType) addRow('Tipo de Contenido', course.contentType);
-    if (course.academicPeriod) addRow('Periodo', course.academicPeriod);
-    if (course.prerequisites && course.prerequisites.length > 0) {
-        const prereqs = course.prerequisites.map(p => p.name).join(', ');
-        addRow('Prerrequisitos', prereqs);
-    }
-    addRow('Profesor', group.professor);
-    addRow('Cupos', `${group.capacity - (group.enrolled || 0)} / ${group.capacity}`);
-    addRow('Modalidad', group.deliveryMode);
-    addRow('Sede', group.campus);
-    addRow('Tipo de Oferta', group.offeringType);
-    if (group.admission && group.admission.type) addRow('Admisión', group.admission.type);
-    addRow('Solo Repitentes', group.repeatersOnly ? 'Sí' : 'No');
-    addRow('Fechas', group.dateRange);
-    addRow('Jornada', group.shift);
-    if (group.program) addRow('Programa', group.program);
-    
-    // Schedule details
-    if (group.schedule && group.schedule.length > 0) {
-        const scheduleTitle = document.createElement('div');
-        scheduleTitle.innerHTML = '<strong>Horario:</strong>';
-        scheduleTitle.style.marginTop = '10px';
-        scheduleTitle.style.color = '#444';
-        content.appendChild(scheduleTitle);
-
-        const scheduleList = document.createElement('div');
-        Object.assign(scheduleList.style, {
+        // Content Container
+        const content = document.createElement('div');
+        Object.assign(content.style, {
             display: 'flex',
             flexDirection: 'column',
             gap: '8px',
-            backgroundColor: '#f5f5f7',
-            padding: '10px',
-            borderRadius: '8px',
-            marginTop: '5px'
+            marginTop: '15px',
+            fontSize: '0.9rem',
+            maxHeight: '60vh',
+            overflowY: 'auto',
+            paddingRight: '5px'
         });
 
-        group.schedule.forEach(s => {
-            let locInfo = '';
-            if (s.location) {
-                const parts = [];
-                if (s.location.type) parts.push(s.location.type);
-                if (s.location.building) parts.push(`Bloque: ${s.location.building}`);
-                if (s.location.room) parts.push(`Salón: ${s.location.room}`);
-                const mainLoc = parts.join(', ');
-                
-                if (mainLoc) locInfo += `<div>${mainLoc}</div>`;
-                if (s.location.name) locInfo += `<div style="font-size:0.8rem; color:#888; margin-top:2px;">${s.location.name}</div>`;
-            }
-            
-            const item = document.createElement('div');
-            item.innerHTML = `
+        // Helper to add rows
+        const addRow = (label, value) => {
+            if (!value) return;
+            const row = document.createElement('div');
+            Object.assign(row.style, {
+                display: 'flex',
+                justifyContent: 'space-between',
+                borderBottom: '1px solid #eee',
+                padding: '6px 0'
+            });
+
+            row.innerHTML = `
+            <strong style="color: #444;">${label}:</strong>
+            <span style="color: #666; text-align: right; max-width: 60%; word-break: break-word;">${value}</span>
+        `;
+            content.appendChild(row);
+        };
+
+        if (course.faculty) addRow('Facultad', course.faculty);
+        if (course.contentType) addRow('Tipo de Contenido', course.contentType);
+        if (course.academicPeriod) addRow('Periodo', course.academicPeriod);
+        if (course.prerequisites && course.prerequisites.length > 0) {
+            const prereqs = course.prerequisites.map(p => p.name).join(', ');
+            addRow('Prerrequisitos', prereqs);
+        }
+        addRow('Profesor', group.professor);
+        addRow('Cupos', `${group.capacity - (group.enrolled || 0)} / ${group.capacity}`);
+        addRow('Modalidad', group.deliveryMode);
+        addRow('Sede', group.campus);
+        addRow('Tipo de Oferta', group.offeringType);
+        if (group.admission && group.admission.type) addRow('Admisión', group.admission.type);
+        addRow('Solo Repitentes', group.repeatersOnly ? 'Sí' : 'No');
+        addRow('Fechas', group.dateRange);
+        addRow('Jornada', group.shift);
+        if (group.program) addRow('Programa', group.program);
+
+        // Schedule details
+        if (group.schedule && group.schedule.length > 0) {
+            const scheduleTitle = document.createElement('div');
+            scheduleTitle.innerHTML = '<strong>Horario:</strong>';
+            scheduleTitle.style.marginTop = '10px';
+            scheduleTitle.style.color = '#444';
+            content.appendChild(scheduleTitle);
+
+            const scheduleList = document.createElement('div');
+            Object.assign(scheduleList.style, {
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                backgroundColor: '#f5f5f7',
+                padding: '10px',
+                borderRadius: '8px',
+                marginTop: '5px'
+            });
+
+            group.schedule.forEach(s => {
+                let locInfo = '';
+                if (s.location) {
+                    const parts = [];
+                    if (s.location.type) parts.push(s.location.type);
+                    if (s.location.building) parts.push(`Bloque: ${s.location.building}`);
+                    if (s.location.room) parts.push(`Salón: ${s.location.room}`);
+                    const mainLoc = parts.join(', ');
+
+                    if (mainLoc) locInfo += `<div>${mainLoc}</div>`;
+                    if (s.location.name) locInfo += `<div style="font-size:0.8rem; color:#888; margin-top:2px;">${s.location.name}</div>`;
+                }
+
+                const item = document.createElement('div');
+                item.innerHTML = `
                 <div style="color:#333;"><span style="font-weight:600;">${s.day}</span>: ${s.time}</div>
                 ${locInfo ? `<div style="font-size:0.85rem; color:#555; margin-top:2px; padding-left: 8px; border-left: 2px solid #ddd;">${locInfo}</div>` : ''}
             `;
-            item.style.borderBottom = '1px solid #e0e0e0';
-            item.style.paddingBottom = '6px';
-            item.style.marginBottom = '2px';
-            scheduleList.appendChild(item);
+                item.style.borderBottom = '1px solid #e0e0e0';
+                item.style.paddingBottom = '6px';
+                item.style.marginBottom = '2px';
+                scheduleList.appendChild(item);
+            });
+            // Remove border from last item
+            if (scheduleList.lastChild) scheduleList.lastChild.style.borderBottom = 'none';
+
+            content.appendChild(scheduleList);
+        }
+
+        modal.appendChild(content);
+
+        // Close button
+        const closeBtn = document.createElement('button');
+        closeBtn.textContent = 'Cerrar';
+        Object.assign(closeBtn.style, {
+            marginTop: '20px',
+            padding: '10px 20px',
+            backgroundColor: '#007aff',
+            color: 'white',
+            border: 'none',
+            borderRadius: '20px',
+            cursor: 'pointer',
+            alignSelf: 'center',
+            fontWeight: '600',
+            width: '100%'
         });
-        // Remove border from last item
-        if (scheduleList.lastChild) scheduleList.lastChild.style.borderBottom = 'none';
-        
-        content.appendChild(scheduleList);
+        closeBtn.onmouseover = () => closeBtn.style.backgroundColor = '#005bb5';
+        closeBtn.onmouseout = () => closeBtn.style.backgroundColor = '#007aff';
+        closeBtn.onclick = () => document.body.removeChild(overlay);
+
+        modal.appendChild(closeBtn);
+
+        // Close on click outside
+        overlay.onclick = (e) => {
+            if (e.target === overlay) document.body.removeChild(overlay);
+        };
+
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
     }
-
-    modal.appendChild(content);
-
-    // Close button
-    const closeBtn = document.createElement('button');
-    closeBtn.textContent = 'Cerrar';
-    Object.assign(closeBtn.style, {
-        marginTop: '20px',
-        padding: '10px 20px',
-        backgroundColor: '#007aff',
-        color: 'white',
-        border: 'none',
-        borderRadius: '20px',
-        cursor: 'pointer',
-        alignSelf: 'center',
-        fontWeight: '600',
-        width: '100%'
-    });
-    closeBtn.onmouseover = () => closeBtn.style.backgroundColor = '#005bb5';
-    closeBtn.onmouseout = () => closeBtn.style.backgroundColor = '#007aff';
-    closeBtn.onclick = () => document.body.removeChild(overlay);
-
-    modal.appendChild(closeBtn);
-
-    // Close on click outside
-    overlay.onclick = (e) => {
-        if (e.target === overlay) document.body.removeChild(overlay);
-    };
-
-    overlay.appendChild(modal);
-    document.body.appendChild(overlay);
-}
 }
