@@ -1679,6 +1679,11 @@ function getGroupTags(group, scheduleItem = null) {
         },
         laboratory: {
             code: 'L', bgColor: '#08460dff', textColor: '#86c78dff', title: 'Laboratorio'
+        },
+        locations: {
+            'RIO': { code: 'Ri', bgColor: '#c9c9c9ff', textColor: '#202020ff', title: 'Rio' },
+            'MINAS': { code: 'Mi', bgColor: '#c9c9c9ff', textColor: '#202020ff', title: 'Minas' },
+            'VOLADOR': { code: 'Vo', bgColor: '#c9c9c9ff', textColor: '#202020ff', title: 'Volador' }
         }
     };
 
@@ -1702,13 +1707,54 @@ function getGroupTags(group, scheduleItem = null) {
         const t = config.repeatersOnly['SI'];
         html += `<div class="group-tag" style="background-color: ${t.bgColor}; color: ${t.textColor};" title="${t.title}">${t.code}</div>`;
     }
-    // 5. Laboratorio - Check if THIS SPECIFIC schedule item is a laboratory
+    // 5. Laboratorio
     if (scheduleItem && scheduleItem.location && scheduleItem.location.name && scheduleItem.location.name.startsWith('LABORATORIO')) {
         const t = config.laboratory;
         html += `<div class="group-tag" style="background-color: ${t.bgColor}; color: ${t.textColor};" title="${t.title}">${t.code}</div>`;
     }
+
+    // 6. Ubicación (Rio, Minas, Volador)
+    if (scheduleItem && scheduleItem.location && scheduleItem.location.name) {
+        const name = scheduleItem.location.name.trim();
+        let t = null;
+
+        // Regex para capturar patrones como:
+        // "12-201", "04-109", "M8-201", "41-102", "M3-202A"
+        // Buscamos algo que parezca un código de bloque-aula
+        // Puede estar al principio o en medio del texto
+        // Patrón: (M o m opcional)(Digito o Digito+Letra)-(Digito...)
+        // Actualizado para aceptar bloques de 1 dígito (ej: M8) y espacios opcionales
+        const match = name.match(/([Mm]?\d+)\s*-\s*([0-9A-Za-z]+)/);
+
+        if (match) {
+            const blockPart = match[1]; // "12", "04", "M8", "41"
+
+            if (blockPart.toUpperCase().startsWith('M')) {
+                t = config.locations['MINAS'];
+            } else if (blockPart.startsWith('0')) {
+                t = config.locations['RIO'];
+            } else {
+                const blockNum = parseInt(blockPart);
+                if (!isNaN(blockNum) && blockNum >= 10) {
+                    t = config.locations['VOLADOR'];
+                }
+            }
+        }
+        // Fallback simple si el nombre empieza directamente con el patrón (ej: "M7-502A")
+        else if (name.startsWith('M')) {
+            t = config.locations['MINAS'];
+        } else if (name.startsWith('0')) {
+            t = config.locations['RIO'];
+        }
+
+        if (t) {
+            html += `<div class="group-tag" style="background-color: ${t.bgColor}; color: ${t.textColor};" title="${t.title}">${t.code}</div>`;
+        }
+    }
+
     return html;
 }
+
 
 /**
  * Actualiza el orden de las materias basado en el DOM y guarda en localStorage.
