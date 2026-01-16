@@ -465,7 +465,6 @@ body {
   background-color: rgba(255, 255, 255, 0.228);
   backdrop-filter: blur(55px);
   border-radius: 45px;
-  corner-shape: squircle;
   display: flex;
   flex-direction: column;
   gap: 2px;

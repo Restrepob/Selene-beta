@@ -1578,6 +1578,36 @@ function renderSchedule(previewData = null) {
             }
         };
 
+        block.oncontextmenu = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Buscar el menú en el DOM para evitar problemas de scope
+            const menu = document.querySelector('.group-context-menu');
+
+            if (menu) {
+                // Guardar el contexto directamente en el elemento del menú
+                menu.activeContext = { course: b.course, group: b.group };
+
+                // Intentar actualizar también la variable global si es accesible
+                try {
+                    if (typeof activeGroupContext !== 'undefined') {
+                        activeGroupContext = { course: b.course, group: b.group };
+                    }
+                } catch (err) { console.log("Context warning", err); }
+
+                menu.style.left = `${e.pageX}px`;
+                menu.style.top = `${e.pageY}px`;
+                menu.style.display = 'block';
+
+                // Cerrar otros menús
+                const valueEditor = document.querySelector('.value-editor');
+                if (valueEditor) valueEditor.classList.remove('active');
+                const optionsMenu = document.querySelector('.options-menu');
+                if (optionsMenu) optionsMenu.classList.remove('active');
+            }
+        };
+
         block.innerHTML = `
             <div class="nombre-grupo" style="background-color: rgba(255,255,255,0.6); color: #333;">G${b.group.groupCode}</div>
             ${tagsHtml}
@@ -2381,11 +2411,14 @@ if (scheduleGrid) {
     let activeGroupContext = null;
 
     detailsItem.onclick = () => {
-        if (activeGroupContext) {
-            showGroupDetails(activeGroupContext.course, activeGroupContext.group);
+        // Usar variable global O propiedad en el elemento DOM como fallback
+        const ctx = activeGroupContext || groupContextMenu.activeContext;
+        if (ctx) {
+            showGroupDetails(ctx.course, ctx.group);
         }
         groupContextMenu.style.display = 'none';
     };
+
 
     document.addEventListener('click', (e) => {
         if (!groupContextMenu.contains(e.target)) {
