@@ -8,7 +8,7 @@ body {
   padding: 0;
   height: 100%;
   width: 100%;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .main {
@@ -247,6 +247,16 @@ body {
   justify-content: center;
   align-items: center;
   position: relative;
+  transition: height 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.main.unpinned .content {
+  height: 55%;
+}
+
+.main.unpinned .content:has(~ .bottom-bar:hover),
+.main.unpinned:has(.bottom-bar:hover) .content {
+  height: 40%;
 }
 
 .schedule-grid {
@@ -329,7 +339,9 @@ body {
   /* Ocupar todo el espacio de la celda */
   width: calc(100% - 4px);
   height: calc(100% - 4px);
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  transition:
+    transform 0.1s ease,
+    box-shadow 0.1s ease;
 }
 
 /* El truco del puntero para los hijos se queda igual */
@@ -376,6 +388,15 @@ body {
   background-color: #7474ff00;
   /* Azul suave */
   display: flex;
+  transition: height 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.main.unpinned .bottom-bar {
+  height: 41%;
+}
+
+.main.unpinned .bottom-bar:hover {
+  height: 56%;
 }
 
 .bottom-container {
@@ -408,7 +429,9 @@ body {
   /* Espacio desde arriba */
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    visibility 0.3s ease;
   gap: 15px;
 }
 
@@ -517,7 +540,7 @@ body {
 }
 
 .op-row-par,
-.op-materia>div:not(.add-op-materia) {
+.op-materia > div:not(.add-op-materia) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1132,7 +1155,7 @@ body {
   right: 0;
   bottom: 0;
   background-color: #ccc;
-  transition: .4s;
+  transition: 0.4s;
   border-radius: 14px;
 }
 
@@ -1144,15 +1167,15 @@ body {
   left: 2px;
   bottom: 2px;
   background-color: white;
-  transition: .4s;
+  transition: 0.4s;
   border-radius: 50%;
 }
 
-input:checked+.slider {
+input:checked + .slider {
   background-color: #34c759;
 }
 
-input:checked+.slider:before {
+input:checked + .slider:before {
   transform: translateX(10px);
 }
 
@@ -1170,7 +1193,9 @@ input:checked+.slider:before {
   cursor: pointer;
   background-color: rgba(255, 255, 255, 0.85);
   box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
-  transition: transform 0.2s, background-color 0.2s;
+  transition:
+    transform 0.2s,
+    background-color 0.2s;
   font-family: sans-serif;
   font-size: 0.8rem;
 }
@@ -1283,7 +1308,9 @@ input:checked+.slider:before {
   cursor: pointer;
   font-weight: bold;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  transition: transform 0.1s, background-color 0.2s;
+  transition:
+    transform 0.1s,
+    background-color 0.2s;
   margin-top: -5px;
   width: 100%;
 }
